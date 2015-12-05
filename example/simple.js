@@ -34,4 +34,8 @@ git.log(function (array) {
   //     'first commit',
   //     '2 days ago',
   //     'Thomas Blobaum' ] ]
-})
+}, 5)
+
+git.logobj(function(array) {
+  console.log('logobj', array);
+}, 5)
