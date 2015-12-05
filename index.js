@@ -126,7 +126,9 @@ var _setup_command_string = function() {
   //logobj_command_string = '';
   var cmdstr = '';
   for(var i = 0; i < logobj_property_info.length; ++i) {
-    logobj_property_info
+    if(isNaN(logobj_property_info.command)) {
+      cmdstr += logobj_property_info.command;
+    }
   }
   console.log('cmdstr', cmdstr);
 }();
