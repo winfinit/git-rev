@@ -47,7 +47,7 @@ module.exports = {
       _command(cmd_string, function (str) {
       var logs = [];
       if ( str !== null ) {
-        (str.split('\n')).forEach(function(line, line_idx) {
+        _itterate_lines_combining_bodytext(str, function(line) {
           var parsed_line = line.split(logsplit_string);
           var parsed_obj = {};
           for(var i = 0; i < logobj_property_info.length; ++i) {
@@ -87,30 +87,29 @@ module.exports = {
       }
       var cmd_string = 'git log --no-color --pretty=format:\"';
       for(var i = 0; i < format.length; ++i) {
-        cmd_string += format[i];
+        var formatter = format[i];
+        if(_is_body_command(formatter)) {
+          formatter = start_body_string + formatter + end_body_string;
+        }
+        cmd_string += formatter;
+        
         if(i != format.length -1) {
           cmd_string += logsplit_string;
         }
       }
       cmd_string += '\" --abbrev-commit';
-      console.log('cmd', cmd_string);
       if(limit != null && !isNaN(limit)) {
          cmd_string += ' -'+limit;
       }
       _command(cmd_string, function (str) {
-      var logs = [];
-      if ( str !== null ) {
-        (str.split('\n')).forEach(function(line, line_idx) {
-          var parsed_line = line.split(logsplit_string);
-            logs.push(parsed_line);
+        var results = [];
+        if ( str !== null ) {
+          _itterate_lines_combining_bodytext(str, function(line){
           });
-        };
-        cb(logs);
       });
    }
 }
 
-// a forbidden set of characters, use something that will never occur in a commit message.
 var logsplit_string = '  |  ';
 
 // array of information about the properties contained in logobj_properties
@@ -155,10 +154,8 @@ function _command (cmd, cb) {
   for(var i = 0; i < logobj_property_info.length; ++i) {
     // just a simple command string?
     if(isNaN(logobj_property_info[i].command)) {
-      logobj_command_string += logobj_property_info[i].command;
     } 
     else { // special case
-      logobj_command_string += special_case_commands[logobj_property_info[i].command];
     }
 
     if(i != logobj_property_info.length-1) {
