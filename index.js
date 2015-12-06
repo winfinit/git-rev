@@ -22,7 +22,7 @@ special_case_commands[SPECIAL.AUTHOR_DATEOBJ] = '%at';
 special_case_commands[SPECIAL.COMMITTER_DATEOBJ] = '%ct';
 
 var special_case_operations = [];
-var _unix_to_date = function(value) { return new Date(Date(value * 1000)); };
+var _unix_to_date = function(value) { return new Date(value * 1000); };
 special_case_operations[SPECIAL.AUTHOR_DATEOBJ] = _unix_to_date;
 special_case_operations[SPECIAL.COMMITTER_DATEOBJ] = _unix_to_date;
 
