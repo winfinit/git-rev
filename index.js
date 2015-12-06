@@ -105,12 +105,18 @@ module.exports = {
         var results = [];
         if ( str !== null ) {
           _itterate_lines_combining_bodytext(str, function(line){
+            results.push(line.split(logsplit_string));
           });
+        }
+        cb(results);
       });
    }
 }
 
+// a forbidden set of strings, use something that will never occur in a commit message.
 var logsplit_string = '  |  ';
+var start_body_string = '<{<'; 
+var end_body_string = '>}>'; 
 
 // array of information about the properties contained in logobj_properties
 // logobj_property_info = [{index:0, name:'foo.bar', command:'%H'}]
@@ -127,6 +133,53 @@ function _command (cmd, cb) {
     }
     cb(stdout.slice(0));
   });
+}
+
+function _is_body_command(cmd) {
+  switch(cmd) {
+    case '%b':
+    case '%B':
+    return true;
+    default:
+    return false;
+  }
+}
+
+// this method will go over each entry in str as though it was its own line - combining body text containing newlines
+// into the current 'line'. Siplifies use cases in the module above.
+function _itterate_lines_combining_bodytext(str, cb) {
+  var splt = str.split('\n');
+  for(var i = 0; i < splt.length ; ++i) {
+    var line = _replace_all(splt[i], start_body_string+end_body_string, ''); // get splt[i] and ensure we don't break on empty text bodies
+
+    var line_start_index = line.indexOf(start_body_string);
+    if(line_start_index > -1)
+    {
+      line = _replace_all( line, start_body_string, '');
+      for(++i; i < splt.length; ++i) { // start one after the current (hence the extra ++i)
+        var line_end_index = splt[i].indexOf(end_body_string);
+        if(line_end_index > -1) {
+          splt[i] = _replace_all(splt[i], end_body_string, '');
+          line += splt[i];
+          break;
+        } 
+        else {
+          line += '\n' + splt[i]; // re-add the newline we cut out with the split.
+        }
+      }
+    }
+    cb(line);
+  }
+}
+
+//http://stackoverflow.com/a/1144788
+function _escape_regex(str) {
+  return str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+}
+
+//http://stackoverflow.com/a/1144788
+function _replace_all(str, find, replace) {
+  return str.replace(new RegExp(_escape_regex(find), 'g'), replace);
 }
 
 { // Setup logobj_property_info from logobj_properties
@@ -152,11 +205,20 @@ function _command (cmd, cb) {
 { // Setup command string
   logobj_command_string = 'git log --no-color --pretty=format:\"';
   for(var i = 0; i < logobj_property_info.length; ++i) {
+    var current_command = '';
     // just a simple command string?
     if(isNaN(logobj_property_info[i].command)) {
+      current_command += logobj_property_info[i].command;
     } 
     else { // special case
+      current_command += special_case_commands[logobj_property_info[i].command];
     }
+
+    if(_is_body_command(current_command)) {
+      current_command = start_body_string + current_command + end_body_string;
+    }
+
+    logobj_command_string += current_command;
 
     if(i != logobj_property_info.length-1) {
       logobj_command_string += logsplit_string;
